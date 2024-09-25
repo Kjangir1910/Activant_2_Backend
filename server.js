@@ -223,16 +223,7 @@ app.delete('/api/products/:id', async (req, res) => {
     }
 });
 
-// Serve static assets if in production
-const path = require('path');
 
-// Serve static files from the React app's build folder
-app.use(express.static(path.join(__dirname, 'client/build')));
-
-// Handle client-side routing, return all requests to React's index.html
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname + '/client/build/index.html'));
-});
 
 
 // Server
