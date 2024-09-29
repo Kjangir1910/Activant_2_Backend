@@ -25,6 +25,7 @@ const ProductSchema = new mongoose.Schema({
     productName: String,
     productId: String,
     description: String,
+    userId: {type: mongoose.Schema.Types.ObjectId, ref: 'User'}
 });
 
 const UserSchema = new mongoose.Schema({
@@ -87,7 +88,7 @@ app.post('/api/users/register', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         const newUser = new User({name, email, address, password: hashedPassword});
         await newUser.save();
-        res.status(200).json({message: "User registered successfully"});
+        res.status(200).json({message: "User registered successfully", user: newUser});
     } catch (error) {
         res.status(400).json({error: 'Unable to save user'});
     }
@@ -152,7 +153,7 @@ app.post('/api/users/login', async (req, res) => {
 
 // Add new product
 app.post('/api/products', async (req, res) => {
-    const { productName, productId, description } = req.body;
+    const { productName, productId, description, userId } = req.body;
 
     if (!productName || !productId || !description) {
         return res.status(400).json({ error: 'All fields are required.' });
@@ -162,7 +163,7 @@ app.post('/api/products', async (req, res) => {
         return res.status(400).json({ error: 'Fields cannot be empty or just whitespace.' });
     }
 
-    const newProduct = new Product({ productName, productId, description });
+    const newProduct = new Product({ productName, productId, description, userId });
 
     try {
         await newProduct.save();
@@ -174,17 +175,21 @@ app.post('/api/products', async (req, res) => {
 
 // Get products with pagination
 app.get('/api/products', async (req, res) => {
-    const { page = 1, limit = 5 } = req.query;
+    const { page = 1, limit = 5, userId } = req.query;
+
+    if(!userId) {
+        return res.status(400).json({error: 'User Id is required to fetch products'})
+    }
 
     try {
         const pageNum = parseInt(page);
         const limitNum = parseInt(limit);
 
-        const products = await Product.find()
+        const products = await Product.find({userId})
             .limit(limitNum)
             .skip((pageNum - 1) * limitNum);
 
-        const totalProducts = await Product.countDocuments();
+        const totalProducts = await Product.countDocuments({userId});
 
         res.json({
             products,
